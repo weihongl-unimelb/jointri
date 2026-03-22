@@ -23,7 +23,11 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error } = await supabase.auth.getUser()
+
+  if (error) {
+    console.error('[Auth Middleware] getUser failed:', error.message)
+  }
 
   const protectedPaths = ['/profile', '/messages', '/projects/new']
   const isProtected = protectedPaths.some(p =>
@@ -32,7 +36,9 @@ export async function updateSession(request: NextRequest) {
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone()
+    const next = request.nextUrl.pathname + request.nextUrl.search
     url.pathname = '/login'
+    url.searchParams.set('next', next)
     return NextResponse.redirect(url)
   }
 
