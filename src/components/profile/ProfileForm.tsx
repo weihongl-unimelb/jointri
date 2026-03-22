@@ -24,6 +24,8 @@ export function ProfileForm({ profile, onSave }: Props) {
   const [tracks, setTracks] = useState<string[]>(profile.tracks ?? [])
   const [websiteUrl, setWebsiteUrl] = useState(profile.website_url ?? '')
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveSuccess, setSaveSuccess] = useState(false)
 
   const toggleRole = (role: Role) => {
     setRoles(prev =>
@@ -51,8 +53,18 @@ export function ProfileForm({ profile, onSave }: Props) {
 
   const handleSubmit = async () => {
     setSaving(true)
-    await onSave({ full_name: fullName, bio, roles, skills, tracks, website_url: websiteUrl })
-    setSaving(false)
+    setSaveError(null)
+    setSaveSuccess(false)
+    try {
+      const result = await onSave({ full_name: fullName, bio, roles, skills, tracks, website_url: websiteUrl })
+      if (result && result.error) {
+        setSaveError(result.error)
+      } else {
+        setSaveSuccess(true)
+      }
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -134,6 +146,13 @@ export function ProfileForm({ profile, onSave }: Props) {
       <Button onClick={handleSubmit} disabled={saving}>
         {saving ? '保存中...' : '保存档案'}
       </Button>
+
+      {saveError && (
+        <p className="text-sm text-red-600">{saveError}</p>
+      )}
+      {saveSuccess && (
+        <p className="text-sm text-green-600">档案已保存</p>
+      )}
     </div>
   )
 }
