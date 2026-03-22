@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { GithubStats } from '@/components/profile/GithubStats'
-import { buttonVariants } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button-variants'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
