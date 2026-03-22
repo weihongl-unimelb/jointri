@@ -23,6 +23,7 @@ export function ProfileForm({ profile, onSave }: Props) {
   const [skillInput, setSkillInput] = useState('')
   const [tracks, setTracks] = useState<string[]>(profile.tracks ?? [])
   const [websiteUrl, setWebsiteUrl] = useState(profile.website_url ?? '')
+  const [urlStatus, setUrlStatus] = useState<'idle' | 'checking' | 'ok' | 'fail'>('idle')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
@@ -49,6 +50,22 @@ export function ProfileForm({ profile, onSave }: Props) {
 
   const removeSkill = (skill: string) => {
     setSkills(prev => prev.filter(s => s !== skill))
+  }
+
+  const checkUrl = async () => {
+    if (!websiteUrl) return
+    setUrlStatus('checking')
+    try {
+      const res = await fetch('/api/url-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: websiteUrl }),
+      })
+      const { reachable } = await res.json()
+      setUrlStatus(reachable ? 'ok' : 'fail')
+    } catch {
+      setUrlStatus('fail')
+    }
   }
 
   const handleSubmit = async () => {
@@ -140,7 +157,23 @@ export function ProfileForm({ profile, onSave }: Props) {
 
       <div className="space-y-2">
         <Label>个人网站 / 作品链接</Label>
-        <Input value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} placeholder="https://..." />
+        <div className="flex gap-2">
+          <Input
+            value={websiteUrl}
+            onChange={e => { setWebsiteUrl(e.target.value); setUrlStatus('idle') }}
+            placeholder="https://..."
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={checkUrl}
+            disabled={!websiteUrl || urlStatus === 'checking'}
+          >
+            {urlStatus === 'checking' ? '检查中...' : '验证链接'}
+          </Button>
+        </div>
+        {urlStatus === 'ok' && <p className="text-xs text-green-600">✓ 链接有效</p>}
+        {urlStatus === 'fail' && <p className="text-xs text-red-500">✗ 无法访问此链接</p>}
       </div>
 
       <Button onClick={handleSubmit} disabled={saving}>
