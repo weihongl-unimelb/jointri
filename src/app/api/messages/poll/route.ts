@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const otherUserId = searchParams.get('userId')
@@ -8,6 +10,10 @@ export async function GET(request: Request) {
 
   if (!otherUserId) {
     return NextResponse.json({ error: 'userId required' }, { status: 400 })
+  }
+
+  if (!UUID_RE.test(otherUserId)) {
+    return NextResponse.json({ error: 'userId 格式无效' }, { status: 400 })
   }
 
   const supabase = await createClient()
@@ -55,6 +61,10 @@ export async function POST(request: Request) {
 
   if (!receiverId || !content?.trim()) {
     return NextResponse.json({ error: 'receiverId and content required' }, { status: 400 })
+  }
+
+  if (content.length > 2000) {
+    return NextResponse.json({ error: '消息不能超过 2000 字' }, { status: 400 })
   }
 
   const { data: message, error } = await supabase

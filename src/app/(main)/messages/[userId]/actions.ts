@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function sendMessage(receiverId: string, content: string) {
   if (!content?.trim()) return { error: '消息内容不能为空' }
+  if (content.length > 2000) return { error: '消息不能超过 2000 字' }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
