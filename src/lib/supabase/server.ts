@@ -10,9 +10,14 @@ export async function createClient() {
       cookies: {
         getAll: () => cookieStore.getAll(),
         setAll: (cookiesToSet) => {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          )
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // Server Component 上下文中无法写入 cookie，忽略此错误
+            // 只有 Route Handler 和 Server Action 中才需要写入
+          }
         },
       },
     }
