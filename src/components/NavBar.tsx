@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
+import { SignOutButton } from '@/components/SignOutButton'
 
 export async function NavBar() {
   const supabase = await createClient()
@@ -39,6 +40,7 @@ export async function NavBar() {
                   <AvatarFallback>{profile?.full_name?.[0] ?? '?'}</AvatarFallback>
                 </Avatar>
               </Link>
+              <SignOutButton />
             </>
           ) : (
             <Link href="/login" className={cn(buttonVariants({ size: 'sm' }))}>

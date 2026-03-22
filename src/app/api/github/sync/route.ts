@@ -2,30 +2,29 @@ import { createClient } from '@/lib/supabase/server'
 import { fetchGithubStats } from '@/lib/github'
 import { NextResponse } from 'next/server'
 
-const syncCooldowns = new Map<string, number>()
-const COOLDOWN_MS = 60_000 // 60 秒
-
 export async function POST() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // 速率限制：每个用户每 60 秒只能同步一次
-  const lastSync = syncCooldowns.get(user.id)
-  if (lastSync && Date.now() - lastSync < COOLDOWN_MS) {
-    const waitSecs = Math.ceil((COOLDOWN_MS - (Date.now() - lastSync)) / 1000)
-    return NextResponse.json({ error: `请等待 ${waitSecs} 秒后再同步` }, { status: 429 })
-  }
-  syncCooldowns.set(user.id, Date.now())
-
   const { data: profile } = await supabase
     .from('profiles')
-    .select('github_username')
+    .select('github_username, updated_at')
     .eq('id', user.id)
     .single()
 
   if (!profile?.github_username) {
     return NextResponse.json({ error: 'No GitHub username' }, { status: 400 })
+  }
+
+  // 速率限制：基于 profile.updated_at，60 秒冷却（Serverless 兼容）
+  if (profile.updated_at) {
+    const lastUpdate = new Date(profile.updated_at).getTime()
+    const cooldownMs = 60_000
+    if (Date.now() - lastUpdate < cooldownMs) {
+      const waitSecs = Math.ceil((cooldownMs - (Date.now() - lastUpdate)) / 1000)
+      return NextResponse.json({ error: `请等待 ${waitSecs} 秒后再同步` }, { status: 429 })
+    }
   }
 
   const stats = await fetchGithubStats(profile.github_username)
