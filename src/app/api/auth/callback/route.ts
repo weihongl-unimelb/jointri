@@ -7,9 +7,9 @@ export async function GET(request: NextRequest) {
   const next = searchParams.get('next') ?? '/profile'
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
+  console.log('[Callback] 收到请求，code =', code ? '存在' : '缺失', 'next =', next, 'appUrl =', appUrl)
+
   if (code) {
-    // 先创建 redirect response，再把 session cookie 直接写到这个 response 上
-    // 不能用 createClient()（它写入 next/headers cookieStore，与 NextResponse 无关）
     const response = NextResponse.redirect(`${appUrl}${next}`)
 
     const supabase = createServerClient(
@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
         cookies: {
           getAll: () => request.cookies.getAll(),
           setAll: (cookiesToSet) => {
+            console.log('[Callback] 写入 cookies:', cookiesToSet.map(c => c.name))
             cookiesToSet.forEach(({ name, value, options }) => {
               response.cookies.set(name, value, options)
             })
@@ -27,11 +28,17 @@ export async function GET(request: NextRequest) {
       }
     )
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    console.log('[Callback] exchangeCodeForSession，user =', data?.user?.id ?? null, 'error =', error?.message ?? null)
+
     if (!error) {
+      console.log('[Callback] 登录成功，重定向到', `${appUrl}${next}`)
       return response
     }
+
+    console.error('[Callback] exchangeCodeForSession 失败:', error.message)
   }
 
+  console.warn('[Callback] 无 code 或 exchange 失败，重定向到登录页')
   return NextResponse.redirect(`${appUrl}/login?error=auth_failed`)
 }

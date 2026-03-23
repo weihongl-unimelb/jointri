@@ -14,15 +14,21 @@ function LoginForm() {
 
   const handleGithubLogin = async () => {
     setLoading(true)
-    const { error } = await supabase.auth.signInWithOAuth({
+    const redirectTo = `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(next)}`
+    console.log('[Login] 开始 OAuth，redirectTo =', redirectTo)
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(next)}`,
+        redirectTo,
         scopes: 'read:user user:email',
       },
     })
+
+    console.log('[Login] signInWithOAuth 返回 data =', JSON.stringify(data), 'error =', error?.message ?? null)
+
     if (error) {
-      console.error('OAuth error:', error.message)
+      console.error('[Login] OAuth 启动失败:', error.message)
       setLoading(false)
     }
     // 成功时不 setLoading(false)，保持 loading 直到页面跳转
@@ -32,7 +38,7 @@ function LoginForm() {
     <>
       {error && (
         <div className="rounded-md bg-destructive/10 text-destructive px-4 py-3 text-sm text-center">
-          登录失败，请重试
+          登录失败，请重试（错误：{error}）
         </div>
       )}
       <Button
